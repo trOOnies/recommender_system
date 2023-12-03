@@ -3,8 +3,16 @@ import numpy as np
 import pandas as pd
 from typing import List
 from dagster import asset, Output, AssetIn
-from recommender_system.assets.sources import scores, movies, users, META_COLS, GENRE_RAW_COLS
+from recommender_system.assets.new_raw import META_COLS, GENRE_RAW_COLS
 # from dagster_mlflow import mlflow_tracking
+# from dagster_dbt import load_assets_from_dbt_project
+
+
+def order_cols(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
+    return df[cols + [c for c in df.columns if c not in cols]]
+
+
+# dbt_assets = load_assets_from_dbt_project(project_dir=DBT_PROJECT_DIR)
 
 replace_dict = {"children's": "childrens", "film-noir": "film_noir", "sci-fi": "sci_fi"}
 GENRE_COLS_TRANSFORM = {g: g.lower() for g in GENRE_RAW_COLS}
@@ -16,25 +24,22 @@ del replace_dict
 GENRE_COLS = [c for c in GENRE_COLS_TRANSFORM.values() if c != "unknown"]
 
 
-def order_cols(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
-    return df[cols + [c for c in df.columns if c not in cols]]
-
-
 @asset(
-    ins={"scores": AssetIn()},
+    ins={"scores_raw": AssetIn("scores_raw")},
     group_name='transformed',
 )
-def transformed_scores(
-    scores: pd.DataFrame
+def scores(
+    scores_raw: pd.DataFrame
 ) -> Output[pd.DataFrame]:
     metadata = {}
-    metadata["rows_in"] = scores.shape[0]
+    metadata["rows_in"] = scores_raw.shape[0]
 
-    new_scores = scores.copy()
+    new_scores = scores_raw.copy()
 
     assert (new_scores["index"] == new_scores["Unnamed: 0"]).all()
     new_scores = new_scores.drop("Unnamed: 0", axis=1)
-    new_scores = new_scores.set_index("index", drop=True, verify_integrity=True)
+    new_scores = new_scores.rename({"index": "id"}, axis=1)
+    new_scores = new_scores.set_index("id", drop=True, verify_integrity=True)
     new_scores = new_scores.rename({"Date": "fecha_hora"}, axis=1)
     metadata["rows_out"] = new_scores.shape[0]
 
@@ -45,16 +50,16 @@ def transformed_scores(
 
 
 @asset(
-    ins={"movies": AssetIn()},
+    ins={"movies_raw": AssetIn("movies_raw")},
     group_name='transformed',
 )
-def transformed_movies(
-    movies: pd.DataFrame
+def movies(
+    movies_raw: pd.DataFrame
 ) -> Output[pd.DataFrame]:
     metadata = {}
-    metadata["rows_in"] = new_movies.shape[0]
+    metadata["rows_in"] = movies_raw.shape[0]
 
-    new_movies = movies.copy()
+    new_movies = movies_raw.copy()
 
     # Chequeos
     assert (new_movies.index == new_movies["index"]).all()
@@ -103,16 +108,16 @@ def transformed_movies(
 
 
 @asset(
-    ins={"users": AssetIn()},
+    ins={"users_raw": AssetIn("users_raw")},
     group_name='transformed',
 )
-def transformed_users(
-    users: pd.DataFrame
+def users(
+    users_raw: pd.DataFrame
 ) -> Output[pd.DataFrame]:
     metadata = {}
-    metadata["rows_in"] = users.shape[0]
+    metadata["rows_in"] = users_raw.shape[0]
 
-    new_users = users.copy()
+    new_users = users_raw.copy()
 
     assert (new_users.index == new_users["index"]).all()
     assert (new_users.index + 1 == new_users.id).all()

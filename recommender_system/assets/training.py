@@ -1,72 +1,51 @@
+import os
+import pickle
+import numpy as np
 import pandas as pd
-from dagster import asset, Output, AssetIn
-from recommender_system.assets.transformed import (
-    transformed_scores,
-    transformed_movies,
-    transformed_users,
-    GENRE_COLS
-)
+from dagster import asset, AssetIn, Output
+from recommender_system.constants import MODELS_TRAINING_FD
+from recommender_system.assets.code.metrics import calc_metrics
+from p2_ml.model_src.baseline_models import RS_baseline_usr_mov
 
 
 @asset(
     ins={
-        "transformed_scores": AssetIn(
-            # key_prefix=["snowflake", "core"],
-            # metadata={"columns": ["id"]}
-        ),
-        "transformed_movies": AssetIn(
-            # key_prefix=["snowflake", "core"],
-            # metadata={"columns": ["id"]}
-        ),
-        "transformed_users": AssetIn(
-            # key_prefix=["snowflake", "core"],
-            # metadata={"columns": ["id"]}
-        ),
+        "X_train": AssetIn(),
+        "X_val": AssetIn(),
+        "X_test": AssetIn(),
+        "y_train": AssetIn(),
+        "y_val": AssetIn(),
+        "y_test": AssetIn(),
+        "ord_train_val": AssetIn(),
+        "tuning_result_baseline_model": AssetIn()
     },
-    group_name="staging"
+    group_name="training"
 )
-def training_data(
-    transformed_scores: pd.DataFrame,
-    transformed_movies: pd.DataFrame,
-    transformed_users: pd.DataFrame,
-) -> Output[pd.DataFrame]:
-    metadata = {
-        "rows_scores_in": transformed_scores.shape[0],
-        "rows_movies_in": transformed_movies.shape[0],
-        "rows_users_in": transformed_users.shape[0],
-    }
+def trained_baseline_model(
+    X_train: pd.DataFrame,
+    X_val: pd.DataFrame,
+    X_test: pd.DataFrame,
+    y_train: np.ndarray,
+    y_val: np.ndarray,
+    y_test: np.ndarray,
+    ord_train_val: np.ndarray,
+    tuning_result_baseline_model: float
+) -> Output[RS_baseline_usr_mov]:
+    X_train_val = pd.concat((X_train, X_val), ignore_index=True)
+    X_train_val = X_train_val.iloc[ord_train_val]
 
-    df = transformed_scores.copy()
+    y_train_val = np.hstack((y_train, y_val))
+    assert y_train_val.shape[0] == y_train.shape[0] + y_val.shape[0]
 
-    df = df.reset_index(drop=False)
+    p = tuning_result_baseline_model
+    model = RS_baseline_usr_mov(p=p)
+    model.fit(X_train_val, y_train_val)
 
-    df = df.merge(transformed_movies.reset_index(), how="inner", left_on="movie_id", right_on="id")
-    df = df.merge(transformed_users.reset_index(), how="inner", left_on="user_id", right_on="id")
+    y_pred = model.predict(X_test)
+    md = calc_metrics(y_test, y_pred)
 
-    df = df.drop(["id_x", "id_y"], axis=1)
-    df = df.rename({"index": "id"}, axis=1).set_index("id", drop=True, verify_integrity=True)
-    df = df.rename(
-        {
-            "name": "m_name", "imdb_url": "m_imdb_url",
-            "year": "m_year", "release_date": "m_release_date"
-        },
-        axis=1
-    )
-    df = df.rename(
-        {
-            "year_birth": "u_year_birth", "Full Name": "u_full_name",
-            "zip_code": "u_zip_code", "is_female": "u_is_female"
-        },
-        axis=1
-    )
+    path = os.path.join(MODELS_TRAINING_FD, f"baseline__{int(p * 100)}pp.pkl")
+    with open(path, "wb") as f:
+        pickle.dump(model, f)
 
-    df = df.rename({c: f"m_genre_{c}" for c in GENRE_COLS}, axis=1)
-
-    df["fecha_hora"] = pd.to_datetime(df.fecha_hora)
-    df["u_age"] = df.fecha_hora - df.u_year_birth.map(lambda v: pd.Timestamp(f"{v}-01-01"))
-    df["u_age"] = (df.u_age.dt.days / 365.25).round(0).astype(int)
-    df["year_diff"] = df.m_year - df.u_year_birth
-
-    metadata["rows_out"] = df.shape[0]
-
-    return Output(df, metadata=metadata)
+    return model
