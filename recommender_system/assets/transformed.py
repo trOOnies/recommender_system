@@ -1,16 +1,15 @@
+import os
 import re
 import numpy as np
 import pandas as pd
+import psycopg2 as pg
 from typing import List
-from dagster import asset, Output, AssetIn
-from recommender_system.assets.new_raw import META_COLS, GENRE_RAW_COLS
+from dagster import asset, Output, AssetIn, MetadataValue
+# import pandas.io.sql as psql
+from recommender_system.assets.raw import META_COLS, GENRE_RAW_COLS
+from recommender_system.assets.code.funcs import order_cols
 # from dagster_mlflow import mlflow_tracking
 # from dagster_dbt import load_assets_from_dbt_project
-
-
-def order_cols(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
-    return df[cols + [c for c in df.columns if c not in cols]]
-
 
 # dbt_assets = load_assets_from_dbt_project(project_dir=DBT_PROJECT_DIR)
 
@@ -22,29 +21,48 @@ GENRE_COLS_TRANSFORM = {
 }
 del replace_dict
 GENRE_COLS = [c for c in GENRE_COLS_TRANSFORM.values() if c != "unknown"]
+GENRE_COLS_W_UNK = [c for c in GENRE_COLS] + ["unknown"]
+
+AIRBYTE_META_COLS = ["_airbyte_ab_id", "_airbyte_emitted_at", "_airbyte_normalized_at", "_airbyte_{table}_hashid"]
+CONN = pg.connect(
+    f"host={os.environ['POSTGRES_HOST']} dbname=itba_mlops user={os.environ['POSTGRES_USER']} password={os.environ['POSTGRES_PASSWORD']}"
+)
+
+
+def get_airbyte_cols(table: str) -> List[str]:
+    cols = [c for c in AIRBYTE_META_COLS]
+    cols[-1] = cols[-1].format(table=table)
+    return cols
+
+
+# -----------------
 
 
 @asset(
     ins={"scores_raw": AssetIn("scores_raw")},
     group_name='transformed',
 )
-def scores(
-    scores_raw: pd.DataFrame
-) -> Output[pd.DataFrame]:
+def scores(scores_raw) -> Output[pd.DataFrame]:
+    df = pd.read_sql_query(
+        """select * from public.scores_raw""",
+        con=CONN
+    )
+    df = df.drop(get_airbyte_cols("scores_raw"), axis=1)
+
     metadata = {}
-    metadata["rows_in"] = scores_raw.shape[0]
+    metadata["rows_in"] = df.shape[0]
 
-    new_scores = scores_raw.copy()
+    assert (df["index"] == df["Unnamed: 0"]).all()
+    df = df.drop("Unnamed: 0", axis=1)
+    df = df.rename({"index": "id"}, axis=1)
+    df = df.set_index("id", drop=True, verify_integrity=True)
+    df = df.rename({"Date": "fecha_hora"}, axis=1)
 
-    assert (new_scores["index"] == new_scores["Unnamed: 0"]).all()
-    new_scores = new_scores.drop("Unnamed: 0", axis=1)
-    new_scores = new_scores.rename({"index": "id"}, axis=1)
-    new_scores = new_scores.set_index("id", drop=True, verify_integrity=True)
-    new_scores = new_scores.rename({"Date": "fecha_hora"}, axis=1)
-    metadata["rows_out"] = new_scores.shape[0]
+    metadata["rows_out"] = df.shape[0]
+    metadata["df"] = MetadataValue.md(df.head(5).to_markdown())
 
     return Output(
-        new_scores,
+        df,
         metadata=metadata,
     )
 
@@ -53,56 +71,58 @@ def scores(
     ins={"movies_raw": AssetIn("movies_raw")},
     group_name='transformed',
 )
-def movies(
-    movies_raw: pd.DataFrame
-) -> Output[pd.DataFrame]:
-    metadata = {}
-    metadata["rows_in"] = movies_raw.shape[0]
+def movies(movies_raw) -> Output[pd.DataFrame]:
+    df = pd.read_sql_query(
+        """select * from public.movies_raw""",
+        con=CONN
+    )
+    df = df.drop(get_airbyte_cols("movies_raw"), axis=1)
 
-    new_movies = movies_raw.copy()
+    metadata = {}
+    metadata["rows_in"] = df.shape[0]
 
     # Chequeos
-    assert (new_movies.index == new_movies["index"]).all()
-    assert (new_movies.index + 1 == new_movies.id).all()
-
-    aux = new_movies.copy()
-    aux = aux.drop(["index", "id", "Name", "Release Date", "IMDB URL"], axis=1)
-    for c in aux.columns:
-        assert set(aux[c].unique()) == {0, 1}  # para bools
+    assert (df.index == df["index"]).all()
+    assert (df.index + 1 == df.id).all()
 
     # Cambios al df
-    new_movies = new_movies.drop("index", axis=1)
-    new_movies = new_movies.set_index("id", drop=True, verify_integrity=True)
+    df = df.drop("index", axis=1)
+    df = df.set_index("id", drop=True, verify_integrity=True)
 
-    new_movies["release_date"] = pd.to_datetime(new_movies["Release Date"])
+    # Generos
+    df = df.rename(GENRE_COLS_TRANSFORM, axis=1)
+    for c in GENRE_COLS_W_UNK:
+        assert set(df[c].unique()) == {0, 1}
+    df = df.astype({c: bool for c in GENRE_COLS_W_UNK})
+    assert (~df[GENRE_COLS][df.unknown].any(axis=1)).all()
+    df = df.drop("unknown", axis=1)
 
-    new_movies["Name"] = new_movies.Name.str.strip()
+    # Otros cambios
+
+    df["release_date"] = pd.to_datetime(df["Release Date"])
+
+    df["Name"] = df.Name.str.strip()
 
     YEAR_PATT = re.compile(r"[1-2]\d{3}$")
 
-    new_movies["year"] = new_movies.Name.str[-5:-1]
-    new_movies["year_ok"] = new_movies.year.map(lambda v: YEAR_PATT.match(v))
-    new_movies["year"] = new_movies.apply(lambda row: float(row.year) if row.year_ok else np.nan, axis=1)
+    df["year"] = df.Name.str[-5:-1]
+    df["year_ok"] = df.year.map(lambda v: YEAR_PATT.match(v))
+    df["year"] = df.apply(lambda row: float(row.year) if row.year_ok else np.nan, axis=1)
 
-    new_movies["name"] = new_movies.apply(lambda row: row.Name[:-7] if row.year_ok else row.Name, axis=1)
-    new_movies = new_movies.drop("year_ok", axis=1)
+    df["name"] = df.apply(lambda row: row.Name[:-7] if row.year_ok else row.Name, axis=1)
+    df = df.drop("year_ok", axis=1)
 
-    new_movies["imdb_url"] = new_movies["IMDB URL"].str[19:]
+    df["imdb_url"] = df["IMDB URL"].str[19:]
 
-    new_movies = new_movies.drop(["Release Date", "Name", "IMDB URL"], axis=1)
+    df = df.drop(["Release Date", "Name", "IMDB URL"], axis=1)
 
-    new_movies = order_cols(new_movies, META_COLS)
+    df = order_cols(df, META_COLS)
 
-    new_movies = new_movies.rename(GENRE_COLS_TRANSFORM, axis=1)
-    new_movies = new_movies.astype({c: bool for c in GENRE_COLS + ["unkwown"]})
-
-    assert (~new_movies[GENRE_COLS][new_movies.unknown].any(axis=1)).all()
-    new_movies = new_movies.drop("unknown", axis=1)
-
-    metadata["rows_out"] = new_movies.shape[0]
+    metadata["rows_out"] = df.shape[0]
+    metadata["df"] = MetadataValue.md(df.head(5).to_markdown())
 
     return Output(
-        new_movies,
+        df,
         metadata=metadata,
     )
 
@@ -111,33 +131,39 @@ def movies(
     ins={"users_raw": AssetIn("users_raw")},
     group_name='transformed',
 )
-def users(
-    users_raw: pd.DataFrame
-) -> Output[pd.DataFrame]:
-    metadata = {}
-    metadata["rows_in"] = users_raw.shape[0]
-
-    new_users = users_raw.copy()
-
-    assert (new_users.index == new_users["index"]).all()
-    assert (new_users.index + 1 == new_users.id).all()
-
-    new_users = new_users.drop("index", axis=1)
-    new_users = new_users.set_index("id", drop=True, verify_integrity=True)
-
-    new_users = new_users.rename(
-        {"year of birth": "year_birth", "Gender": "gender", "Zip Code": "zip_code"},
-        axis=1
+def users(users_raw) -> Output[pd.DataFrame]:
+    df = pd.read_sql_query(
+        """select * from public.users_raw""",
+        con=CONN
     )
-    new_users = new_users.astype({"year_birth": int})
+    df = df.drop(get_airbyte_cols("users_raw"), axis=1)
 
-    assert new_users.gender.nunique() == 2
-    new_users["is_female"] = new_users.gender == "F"
-    new_users = new_users.drop("gender", axis=1)
+    metadata = {}
+    metadata["rows_in"] = df.shape[0]
 
-    assert (new_users.zip_code.str.len() == 5).all()  # aunque usan letras y numeros a piacere
+    assert (df.index == df["index"]).all()
+    assert (df.index + 1 == df.id).all()
+
+    df = df.drop("index", axis=1)
+    df = df.set_index("id", drop=True, verify_integrity=True)
+
+    df = df.rename(
+        {"year of birth": "year_birth", "Zip Code": "zip_code"},
+        axis=1,
+        errors="raise"
+    )
+    df = df.astype({"year_birth": int})
+
+    assert df.gender.nunique() == 2
+    df["is_female"] = df.gender == "F"
+    df = df.drop("gender", axis=1)
+
+    assert (df.zip_code.str.len() == 5).all()  # aunque usan letras y numeros a piacere
+
+    metadata["rows_out"] = df.shape[0]
+    metadata["df"] = MetadataValue.md(df.head(5).to_markdown())
 
     return Output(
-        new_users,
+        df,
         metadata=metadata,
     )
