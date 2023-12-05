@@ -25,6 +25,8 @@ def trained_baseline_model(
     y_test: np.ndarray,
     tuning_result_baseline_model: float
 ) -> Output[RS_baseline_usr_mov]:
+    metadata = {}
+
     p = tuning_result_baseline_model
     model = RS_baseline_usr_mov(p=p)
     model.fit(X_train_val, y_train_val)
@@ -32,8 +34,10 @@ def trained_baseline_model(
     y_pred = model.predict(X_test)
     md = calc_metrics(y_test, y_pred)
 
-    path = os.path.join(MODELS_TRAINING_FD, f"baseline__{int(p * 100)}pp.pkl")
-    with open(path, "wb") as f:
-        pickle.dump(model, f)
+    # path = os.path.join(MODELS_TRAINING_FD, f"baseline__{int(p * 100)}pp.pkl")
+    # with open(path, "wb") as f:
+    #     pickle.dump(model, f)
 
-    return model
+    metadata.update(md)
+
+    return Output(model, metadata=metadata)

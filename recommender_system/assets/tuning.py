@@ -22,10 +22,12 @@ P_STEPS = 10
 def tuning_result_baseline_model(
     X_train: pd.DataFrame,
     X_val: pd.DataFrame,
-    y_train: pd.DataFrame,
-    y_val: pd.DataFrame
+    y_train: np.ndarray,
+    y_val: np.ndarray
 ) -> Output[float]:
-    all_perf = np.zeros(P_STEPS, dtype=float)
+    metadata = {}
+
+    all_perf = np.zeros(P_STEPS + 1, dtype=float)
     p_width = 1.0 / float(P_STEPS)
     ps = np.arange(0.0, 1.0 + p_width, p_width)
 
@@ -38,13 +40,21 @@ def tuning_result_baseline_model(
         md = calc_metrics(y_val, y_pred)
         all_perf[i] = md[OBJ_METRIC["name"]]
 
-        path = os.path.join(MODELS_TUNING_FD, f"baseline__{int(p * 100)}pp.pkl")
-        with open(path, "wb") as f:
-            pickle.dump(model, f)
+        # path = os.path.join(MODELS_TUNING_FD, f"baseline__{int(p * 100)}pp.pkl")
+        # with open(path, "wb") as f:
+        #     pickle.dump(model, f)
         del model
 
     if OBJ_METRIC["lower_is_better"]:
         best_ix = np.argmin(all_perf)
     else:
         best_ix = np.argmax(all_perf)
-    return ps[best_ix]
+    best_val = ps[best_ix]
+
+    metadata["P_STEPS"] = P_STEPS
+    metadata["metric_name"] = OBJ_METRIC["name"]
+    metadata["best_p"] = best_val
+    metadata["best_perf"] = all_perf[best_ix]
+    metadata["lower_is_better"] = OBJ_METRIC["lower_is_better"]
+
+    return Output(best_val, metadata=metadata)
