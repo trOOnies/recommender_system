@@ -1,0 +1,179 @@
+version: 2
+
+sources:
+  - name: recommmender_system_raw
+    description: "Tablas raw para el Recomendador IMDB"
+    database: mlops
+    schema: source
+    tables:
+      - name: scores
+      - name: movies
+      - name: users
+models:
+  - name: movies
+    description: "Peliculas preprocesadas"
+    columns:
+      - name: id
+        description: "ID unico de pelicula"
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Nombre"
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: "Anio"
+      - name: release_date
+        description: "Fecha de estreno"
+      - name: imdb_url
+        description: "URL en IMDB"
+      - name: action
+        description: "Genero accion"
+      - name: adventure
+        description: "Genero aventura"
+      - name: animation
+        description: "Genero animacion"
+      - name: childrens
+        description: "Genero para ninios"
+      - name: comedy
+        description: "Genero comedia"
+      - name: crime
+        description: "Genero crimen"
+      - name: documentary
+        description: "Genero documentario"
+      - name: drama
+        description: "Genero drama"
+      - name: fantasy
+        description: "Genero fantasia"
+      - name: film_noir
+        description: "Genero film noir"
+      - name: horror
+        description: "Genero horror"
+      - name: musical
+        description: "Genero musical"
+      - name: mystery
+        description: "Genero misterio"
+      - name: romance
+        description: "Genero romance"
+      - name: sci_fi
+        description: "Genero ciencia ficcion"
+      - name: thriller
+        description: "Genero thriller"
+      - name: war
+        description: "Genero guerra"
+      - name: western
+        description: "Genero del oeste"
+  - name: users
+    description: "Usuarios preprocesados"
+    columns:
+      - name: id
+        description: "ID unico de usuario"
+        tests:
+          - unique
+          - not_null
+      - name: full_name
+        description: "Nombre y apellido"
+        tests:
+          - not_null
+      - name: year_birth
+        description: "Anio de nacimiento"
+      - name: zip_code
+        description: "Codigo postal"
+      - name: is_female
+        description: "Es mujer"
+  - name: scores
+    description: "Puntajes preprocesados"
+    columns:
+      - name: index
+        description: "Indice del score"
+        tests:
+          - unique
+          - not_null
+      - name: user_id
+        description: "ID del usuario"
+        tests:
+          - not_null
+      - name: movie_id
+        description: "ID de la pelicula"
+        tests:
+          - not_null
+      - name: rating
+        description: "Score dado"
+        tests:
+          - not_null
+      - name: fecha_hora
+        description: "Fecha y hora del score"
+  - name: staged_data
+    description: "Union entre movies users y scores con feat eng ya hecho"
+    columns:
+      - name: id
+        description: "ID unico del score"
+        tests:
+          - unique
+          - not_null
+      - name: user_id
+        description: "ID del usuario"
+        tests:
+          - not_null
+      - name: movie_id
+        description: "ID de la pelicula"
+        tests:
+          - not_null
+      - name: rating
+        description: "Score dado"
+        tests:
+          - not_null
+      - name: fecha_hora
+        description: "Fecha y hora del score"
+      - name: m_year
+        description: "Anio de la pelicula"
+      - name: m_release_date
+        description: "Fecha de estreno de la pelicula"
+      - name: m_genre_action
+        description: "Genero accion"
+      - name: m_genre_adventure
+        description: "Genero aventura"
+      - name: m_genre_animation
+        description: "Genero animacion"
+      - name: m_genre_childrens
+        description: "Genero para ninios"
+      - name: m_genre_comedy
+        description: "Genero comedia"
+      - name: m_genre_crime
+        description: "Genero crimen"
+      - name: m_genre_documentary
+        description: "Genero documentario"
+      - name: m_genre_drama
+        description: "Genero drama"
+      - name: m_genre_fantasy
+        description: "Genero fantasia"
+      - name: m_genre_film_noir
+        description: "Genero film noir"
+      - name: m_genre_horror
+        description: "Genero horror"
+      - name: m_genre_musical
+        description: "Genero musical"
+      - name: m_genre_mystery
+        description: "Genero misterio"
+      - name: m_genre_romance
+        description: "Genero romance"
+      - name: m_genre_sci_fi
+        description: "Genero ciencia ficcion"
+      - name: m_genre_thriller
+        description: "Genero thriller"
+      - name: m_genre_war
+        description: "Genero guerra"
+      - name: m_genre_western
+        description: "Genero del oeste"
+      - name: u_year_birth
+        description: "Anio de nacimiento del usuario"
+      - name: u_zip_code
+        description: "Codigo postal del usuario"
+      - name: u_is_female
+        description: "El usuario es mujer"
+      - name: u_age
+        description: "Edad del usuario"
+      - name: year_diff
+        description: "Anio de la pelicula menos anio de nacimiento del usuario"

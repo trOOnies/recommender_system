@@ -5,7 +5,7 @@ AIRBYTE_CONNECTION_IDS = {
     "users_raw": os.environ["AB_USERS_RAW_CID"],
     "scores_raw": os.environ["AB_SCORES_RAW_CID"]
 }
-DBT_PROJECT_DIR = "..."
+DBT_PROJECT_DIR = "recommender_system/dbt_fd"
 LABEL_COL = "rating"
 USER_COL = "user_id"
 MOVIE_COL = "movie_id"
