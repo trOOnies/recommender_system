@@ -14,6 +14,7 @@ setup(
         f"dagster-dbt=={DAGSTER_LIBS_VERSION}",
         f"dagster-mlflow=={DAGSTER_LIBS_VERSION}",
         f"mlflow=={MLFLOW_VERSION}",
+        "dbt-postgres"
         # f"tensorflow==2.14.0",
         # dbt-duckdb
     ],

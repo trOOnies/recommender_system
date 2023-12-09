@@ -1,0 +1,15 @@
+dbt_rs:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: 192.168.0.43
+      user: airbyte_user
+      password: purrPURR1234
+      # host: "{{ env_var('POSTGRES_HOST') }}"
+      # user: "{{ env_var('POSTGRES_USER') }}"
+      # password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      port: 5432
+      dbname: itba_mlops
+      schema: public
+      threads: 4

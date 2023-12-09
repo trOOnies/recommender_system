@@ -3,177 +3,276 @@ version: 2
 sources:
   - name: recommmender_system_raw
     description: "Tablas raw para el Recomendador IMDB"
-    database: mlops
-    schema: source
+    database: itba_mlops
+    schema: public
     tables:
-      - name: scores
-      - name: movies
-      - name: users
+      - name: scores_raw
+      - name: movies_raw
+      - name: users_raw
 models:
   - name: movies
     description: "Peliculas preprocesadas"
+    config:
+      materialized: table
+      contract:
+        enforced: true
+    constraints:
+      - type: primary_key
+        columns: [id]
     columns:
       - name: id
         description: "ID unico de pelicula"
+        data_type: int
         tests:
           - unique
           - not_null
       - name: name
         description: "Nombre"
+        data_type: string
         tests:
           - unique
           - not_null
-      - name: year
-        description: "Anio"
+      # - name: year
+      #   description: "Anio"
+      #   data_type: int
       - name: release_date
         description: "Fecha de estreno"
+        data_type: date
       - name: imdb_url
         description: "URL en IMDB"
+        data_type: string
       - name: action
         description: "Genero accion"
+        data_type: boolean
       - name: adventure
         description: "Genero aventura"
+        data_type: boolean
       - name: animation
         description: "Genero animacion"
+        data_type: boolean
       - name: childrens
         description: "Genero para ninios"
+        data_type: boolean
       - name: comedy
         description: "Genero comedia"
+        data_type: boolean
       - name: crime
         description: "Genero crimen"
+        data_type: boolean
       - name: documentary
         description: "Genero documentario"
+        data_type: boolean
       - name: drama
         description: "Genero drama"
+        data_type: boolean
       - name: fantasy
         description: "Genero fantasia"
+        data_type: boolean
       - name: film_noir
         description: "Genero film noir"
+        data_type: boolean
       - name: horror
         description: "Genero horror"
+        data_type: boolean
       - name: musical
         description: "Genero musical"
+        data_type: boolean
       - name: mystery
         description: "Genero misterio"
+        data_type: boolean
       - name: romance
         description: "Genero romance"
+        data_type: boolean
       - name: sci_fi
         description: "Genero ciencia ficcion"
+        data_type: boolean
       - name: thriller
         description: "Genero thriller"
+        data_type: boolean
       - name: war
         description: "Genero guerra"
+        data_type: boolean
       - name: western
         description: "Genero del oeste"
+        data_type: boolean
   - name: users
     description: "Usuarios preprocesados"
+    config:
+      materialized: table
+      contract:
+        enforced: true
+    constraints:
+      - type: primary_key
+        columns: [id]
     columns:
       - name: id
         description: "ID unico de usuario"
+        data_type: int
         tests:
           - unique
           - not_null
       - name: full_name
         description: "Nombre y apellido"
+        data_type: string
         tests:
           - not_null
       - name: year_birth
         description: "Anio de nacimiento"
+        data_type: int
       - name: zip_code
         description: "Codigo postal"
+        data_type: string
       - name: is_female
         description: "Es mujer"
+        data_type: boolean
   - name: scores
     description: "Puntajes preprocesados"
-    columns:
-      - name: index
-        description: "Indice del score"
-        tests:
-          - unique
-          - not_null
-      - name: user_id
-        description: "ID del usuario"
-        tests:
-          - not_null
-      - name: movie_id
-        description: "ID de la pelicula"
-        tests:
-          - not_null
-      - name: rating
-        description: "Score dado"
-        tests:
-          - not_null
-      - name: fecha_hora
-        description: "Fecha y hora del score"
-  - name: staged_data
-    description: "Union entre movies users y scores con feat eng ya hecho"
+    config:
+      materialized: table
+      contract:
+        enforced: true
+    constraints:
+      - type: primary_key
+        columns: [id]
     columns:
       - name: id
         description: "ID unico del score"
+        data_type: int
         tests:
           - unique
           - not_null
       - name: user_id
         description: "ID del usuario"
+        data_type: int
         tests:
           - not_null
       - name: movie_id
         description: "ID de la pelicula"
+        data_type: int
         tests:
           - not_null
       - name: rating
         description: "Score dado"
+        data_type: int
+        constraints:
+          - type: check
+            expression: "rating >= 1"
+          - type: check
+            expression: "rating <= 5"
         tests:
           - not_null
       - name: fecha_hora
         description: "Fecha y hora del score"
-      - name: m_year
-        description: "Anio de la pelicula"
+        data_type: timestamp
+  - name: staged_data
+    description: "Union entre movies users y scores con feat eng ya hecho"
+    config:
+      materialized: table
+      contract:
+        enforced: true
+    constraints:
+      - type: primary_key
+        columns: [id]
+    columns:
+      - name: id
+        description: "ID unico del score"
+        data_type: int
+        tests:
+          - unique
+          - not_null
+      - name: user_id
+        description: "ID del usuario"
+        data_type: int
+        tests:
+          - not_null
+      - name: movie_id
+        description: "ID de la pelicula"
+        data_type: int
+        tests:
+          - not_null
+      - name: rating
+        description: "Score dado"
+        data_type: int
+        tests:
+          - not_null
+      - name: fecha_hora
+        description: "Fecha y hora del score"
+        data_type: timestamp
+      # - name: m_year
+      #   description: "Anio de la pelicula"
+      #   data_type: int
       - name: m_release_date
         description: "Fecha de estreno de la pelicula"
+        data_type: date
       - name: m_genre_action
         description: "Genero accion"
+        data_type: boolean
       - name: m_genre_adventure
         description: "Genero aventura"
+        data_type: boolean
       - name: m_genre_animation
         description: "Genero animacion"
+        data_type: boolean
       - name: m_genre_childrens
         description: "Genero para ninios"
+        data_type: boolean
       - name: m_genre_comedy
         description: "Genero comedia"
+        data_type: boolean
       - name: m_genre_crime
         description: "Genero crimen"
+        data_type: boolean
       - name: m_genre_documentary
         description: "Genero documentario"
+        data_type: boolean
       - name: m_genre_drama
         description: "Genero drama"
+        data_type: boolean
       - name: m_genre_fantasy
         description: "Genero fantasia"
+        data_type: boolean
       - name: m_genre_film_noir
         description: "Genero film noir"
+        data_type: boolean
       - name: m_genre_horror
         description: "Genero horror"
+        data_type: boolean
       - name: m_genre_musical
         description: "Genero musical"
+        data_type: boolean
       - name: m_genre_mystery
         description: "Genero misterio"
+        data_type: boolean
       - name: m_genre_romance
         description: "Genero romance"
+        data_type: boolean
       - name: m_genre_sci_fi
         description: "Genero ciencia ficcion"
+        data_type: boolean
       - name: m_genre_thriller
         description: "Genero thriller"
+        data_type: boolean
       - name: m_genre_war
         description: "Genero guerra"
+        data_type: boolean
       - name: m_genre_western
         description: "Genero del oeste"
+        data_type: boolean
       - name: u_year_birth
         description: "Anio de nacimiento del usuario"
+        data_type: int
       - name: u_zip_code
         description: "Codigo postal del usuario"
+        data_type: string
       - name: u_is_female
         description: "El usuario es mujer"
+        data_type: boolean
       - name: u_age
         description: "Edad del usuario"
-      - name: year_diff
-        description: "Anio de la pelicula menos anio de nacimiento del usuario"
+        data_type: int
+        constraints:
+          - type: check
+            expression: "u_age >= 0"
+      # - name: year_diff
+      #   description: "Anio de la pelicula menos anio de nacimiento del usuario"
+      #   data_type: int
