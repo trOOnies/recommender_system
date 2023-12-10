@@ -23,7 +23,7 @@ SELECT
     cast(cast("thriller" as int) as boolean),
     cast(cast("war" as int) as boolean),
     cast(cast("western" as int) as boolean)
-FROM {{ source("recommmender_system_raw", "movies_raw") }}
+FROM {{ source("recommender_system_raw", "movies_raw") }}
 -- )
 -- SELECT
 --     id,

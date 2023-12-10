@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: recommmender_system_raw
+  - name: recommender_system_raw
     description: "Tablas raw para el Recomendador IMDB"
     database: itba_mlops
     schema: public

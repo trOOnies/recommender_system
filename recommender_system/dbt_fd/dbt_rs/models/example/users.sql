@@ -4,4 +4,4 @@ SELECT
     (gender = 'F') as is_female,
     cast("year of birth" as int) as year_birth,
     "Zip Code" as zip_code
-FROM {{ source("recommmender_system_raw", "users_raw") }}
+FROM {{ source("recommender_system_raw", "users_raw") }}

@@ -4,4 +4,4 @@ SELECT
     cast(user_id as int),
     cast(movie_id as int),
     cast(rating as int)
-FROM {{ source("recommmender_system_raw", "scores_raw") }}
+FROM {{ source("recommender_system_raw", "scores_raw") }}

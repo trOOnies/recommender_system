@@ -14,8 +14,9 @@ from p2_ml.model_src.baseline_models import RS_baseline_usr_mov
         "X_test": AssetIn(),
         "y_train_val": AssetIn(),
         "y_test": AssetIn(),
-        "tuning_result_baseline_model": AssetIn()
+        "tuning_baseline_model_best_param": AssetIn()
     },
+    description="Mejor modelo de training",
     group_name="training"
 )
 def trained_baseline_model(
@@ -23,11 +24,11 @@ def trained_baseline_model(
     X_test: pd.DataFrame,
     y_train_val: np.ndarray,
     y_test: np.ndarray,
-    tuning_result_baseline_model: float
+    tuning_baseline_model_best_param: float
 ) -> Output[RS_baseline_usr_mov]:
     metadata = {}
 
-    p = tuning_result_baseline_model
+    p = tuning_baseline_model_best_param
     model = RS_baseline_usr_mov(p=p)
     model.fit(X_train_val, y_train_val)
 
