@@ -3,8 +3,9 @@ import pandas as pd
 from typing import Tuple, List
 from math import sqrt
 from sklearn.model_selection import train_test_split
-from dagster import multi_asset, AssetIn, AssetOut, Output, OutputMapping
+from dagster import multi_asset, AssetIn, AssetOut, Output
 from recommender_system.constants import LABEL_COL, USER_COL, MOVIE_COL
+from recommender_system.assets.dbt_transform import staged_data_asset_key
 
 
 def get_unique_vals(ser: pd.Series) -> set:
@@ -104,10 +105,12 @@ def two_cols_split(
 
     return X_train, X_test, y_train, y_test
 
+print("staged_data_asset_key:", staged_data_asset_key)
+
 
 @multi_asset(
     ins={
-        "staged_data": AssetIn()
+        "staged_data": AssetIn(key=staged_data_asset_key)
     },
     outs={
         "X_train": AssetOut(dagster_type=Output[pd.DataFrame], group_name="train_data"),
@@ -117,7 +120,8 @@ def two_cols_split(
         "y_val": AssetOut(dagster_type=Output[np.ndarray], group_name="val_data"),
         "y_test": AssetOut(dagster_type=Output[np.ndarray], group_name="test_data"),
         "ord_train_val": AssetOut(dagster_type=Output[np.ndarray], group_name="train_data")
-    }
+    },
+    # deps=[staged_data_asset_key]
 )
 def splitted_data(
     staged_data: pd.DataFrame

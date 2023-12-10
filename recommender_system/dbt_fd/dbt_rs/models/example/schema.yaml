@@ -7,8 +7,11 @@ sources:
     schema: public
     tables:
       - name: scores_raw
+        identifier: _airbyte_raw_scores_raw
       - name: movies_raw
+        identifier: _airbyte_raw_movies_raw
       - name: users_raw
+        identifier: _airbyte_raw_users_raw
 models:
   - name: movies
     description: "Peliculas preprocesadas"
@@ -16,6 +19,9 @@ models:
       materialized: table
       contract:
         enforced: true
+      meta:
+        dagster:
+          group: transformed
     constraints:
       - type: primary_key
         columns: [id]
@@ -101,6 +107,9 @@ models:
       materialized: table
       contract:
         enforced: true
+      meta:
+        dagster:
+          group: transformed
     constraints:
       - type: primary_key
         columns: [id]
@@ -131,6 +140,9 @@ models:
       materialized: table
       contract:
         enforced: true
+      meta:
+        dagster:
+          group: transformed
     constraints:
       - type: primary_key
         columns: [id]
@@ -170,6 +182,9 @@ models:
       materialized: table
       contract:
         enforced: true
+      meta:
+        dagster:
+          group: staging
     constraints:
       - type: primary_key
         columns: [id]
