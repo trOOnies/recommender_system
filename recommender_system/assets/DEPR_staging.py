@@ -1,6 +1,6 @@
 import pandas as pd
 from dagster import asset, AssetIn, Output, MetadataValue
-from recommender_system.assets.transformed import GENRE_COLS
+from recommender_system.assets.DEPR_transformed import GENRE_COLS
 from recommender_system.assets.code.funcs import order_cols
 
 

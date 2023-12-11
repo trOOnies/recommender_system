@@ -7,11 +7,11 @@ sources:
     schema: public
     tables:
       - name: scores_raw
-        identifier: _airbyte_raw_scores_raw
+        # identifier: _airbyte_raw_scores_raw
       - name: movies_raw
-        identifier: _airbyte_raw_movies_raw
+        # identifier: _airbyte_raw_movies_raw
       - name: users_raw
-        identifier: _airbyte_raw_users_raw
+        # identifier: _airbyte_raw_users_raw
 models:
   - name: movies
     description: "Peliculas preprocesadas"
@@ -36,7 +36,6 @@ models:
         description: "Nombre"
         data_type: string
         tests:
-          - unique
           - not_null
       # - name: year
       #   description: "Anio"

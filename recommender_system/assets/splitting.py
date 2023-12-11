@@ -1,15 +1,24 @@
+import os
 import numpy as np
 import pandas as pd
+import psycopg2 as pg
 from dagster import multi_asset, AssetIn, AssetOut, Output
+# from dagster_dbt import get_asset_key_for_model
 from recommender_system.constants import LABEL_COL, USER_COL, MOVIE_COL
 from recommender_system.assets.dbt_transform import staged_data_asset_key
 from recommender_system.assets.code.splitting import two_cols_split
 
+CONN = pg.connect(
+    f"host={os.environ['POSTGRES_HOST']} dbname=itba_mlops user={os.environ['POSTGRES_USER']} password={os.environ['POSTGRES_PASSWORD']}"
+)
+
 
 @multi_asset(
-    ins={
-        "staged_data": AssetIn(key=staged_data_asset_key)
-    },
+    compute_kind="python",
+    deps=staged_data_asset_key,
+    # ins={
+    #     "staged_data": AssetIn(key=staged_data_asset_key)
+    # },
     outs={
         "X_train": AssetOut(
             dagster_type=Output[pd.DataFrame],
@@ -48,9 +57,11 @@ from recommender_system.assets.code.splitting import two_cols_split
         )
     }
 )
-def splitted_data(
-    staged_data: pd.DataFrame
-):
+def splitted_data():
+    staged_data = pd.read_sql_query(
+        """select * from public.staged_data""",
+        con=CONN
+    )
     staged_data = staged_data.sample(
         n=staged_data.shape[0],
         random_state=42,
@@ -85,6 +96,7 @@ def splitted_data(
 
 
 @multi_asset(
+    compute_kind="python",
     ins={
         "X_train": AssetIn(),
         "X_val": AssetIn(),

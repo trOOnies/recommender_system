@@ -9,6 +9,7 @@ from p2_ml.model_src.baseline_models import RS_baseline_usr_mov
 
 
 @asset(
+    compute_kind="python",
     ins={
         "X_train_val": AssetIn(),
         "X_test": AssetIn(),

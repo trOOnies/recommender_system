@@ -21,6 +21,7 @@ mlflow = mlflow_tracking.configured({
 
 
 @asset(
+    compute_kind="python",
     ins={
         "X_train": AssetIn(),
         "X_val": AssetIn(),

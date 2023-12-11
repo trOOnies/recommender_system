@@ -1,6 +1,6 @@
 -- WITH t_0 as (
 SELECT
-    cast(id as int),
+    cast("id" as int),
     trim("Name") as name,
     cast("Release Date" as date) as release_date,
     -- year("Release date") as year,
