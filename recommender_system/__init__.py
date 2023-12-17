@@ -2,7 +2,6 @@
 from dagster import (
     Definitions, load_assets_from_modules, define_asset_job,
 )
-# from dagster_mlflow import mlflow_tracking
 from recommender_system.assets import (
     raw,
     dbt_transform,
@@ -19,6 +18,8 @@ all_assets = load_assets_from_modules(
 )
 for a in raw.ab_assets.values():
     all_assets += a
+# all_assets += tuning_job
+
 
 # all_assets_job_config = {
 #     "resources": {
@@ -38,6 +39,7 @@ defs = Definitions(
             # config=all_assets_job_config
         )
     ],
-    resources={"dbt": dbt_transform.dbt_resource}
-    # resources={"mlflow": mlflow}
+    resources={
+        "dbt": dbt_transform.dbt_resource
+    }
 )

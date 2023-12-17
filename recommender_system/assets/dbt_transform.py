@@ -43,31 +43,3 @@ def dbt_project_assets(context: AssetExecutionContext, dbt: DbtCliResource) -> A
 # movies_asset_key = get_asset_key_for_model([dbt_project_assets], "movies")
 # scores_asset_key = get_asset_key_for_model([dbt_project_assets], "scores")
 staged_data_asset_key = get_asset_key_for_model([dbt_project_assets], "staged_data")
-
-# @dbt_assets(manifest=DBT_MANIFEST_PATH)
-# def dbt_project_assets(context: AssetExecutionContext, dbt: DbtCliResource):
-#     yield from dbt.cli(["build"], context=context).stream()
-
-
-# @assets(
-#     ins={"movies_raw": AssetIn("movies_raw")},
-#     group_name='transformed',
-# )
-# def movies(movies_raw) -> Output[DataFrame]:
-#     return movies
-
-
-# @assets(
-#     ins={"scores_raw": AssetIn("scores_raw")},
-#     group_name='transformed',
-# )
-# def scores(scores_raw) -> Output[DataFrame]:
-#     return scores
-
-
-# @assets(
-#     ins={"users_raw": AssetIn("users_raw")},
-#     group_name='transformed',
-# )
-# def users(users_raw) -> Output[DataFrame]:
-#     return users
