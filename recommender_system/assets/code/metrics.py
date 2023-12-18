@@ -1,5 +1,5 @@
-from typing import TYPE_CHECKING, Dict, Union
 from math import sqrt
+from typing import TYPE_CHECKING, Dict, Union, Optional
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 if TYPE_CHECKING:
     from numpy import ndarray
@@ -7,7 +7,8 @@ if TYPE_CHECKING:
 
 def calc_metrics(
     y_real: "ndarray",
-    y_pred: "ndarray"
+    y_pred: "ndarray",
+    prefix: Optional[str] = None
 ) -> Dict[str, Union[float, int]]:
     md = {
         "avg_score_real": y_real.mean(),
@@ -19,4 +20,6 @@ def calc_metrics(
     }
     md["avg_score_diff"] = md["avg_score_pred"] - md["avg_score_real"]
     md["rmse"] = sqrt(md["mse"])
+    if prefix is not None:
+        md = {f"{prefix}_{k}": v for k, v in md.items()}
     return md

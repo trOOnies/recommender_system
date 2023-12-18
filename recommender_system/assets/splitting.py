@@ -3,22 +3,23 @@ import numpy as np
 import pandas as pd
 import psycopg2 as pg
 from dagster import multi_asset, AssetIn, AssetOut, Output
-# from dagster_dbt import get_asset_key_for_model
 from recommender_system.constants import LABEL_COL, USER_COL, MOVIE_COL
 from recommender_system.assets.dbt_transform import staged_data_asset_key
 from recommender_system.assets.code.splitting import two_cols_split
 
 CONN = pg.connect(
-    f"host={os.environ['POSTGRES_HOST']} dbname=itba_mlops user={os.environ['POSTGRES_USER']} password={os.environ['POSTGRES_PASSWORD']}"
+    " ".join([
+        f"host={os.environ['POSTGRES_HOST']}",
+        f"dbname={os.environ['POSTGRES_DBNAME']}",
+        f"user={os.environ['POSTGRES_USER']}",
+        f"password={os.environ['POSTGRES_PASSWORD']}"
+    ])
 )
 
 
 @multi_asset(
     compute_kind="python",
     deps=staged_data_asset_key,
-    # ins={
-    #     "staged_data": AssetIn(key=staged_data_asset_key)
-    # },
     outs={
         "X_train": AssetOut(
             dagster_type=Output[pd.DataFrame],
