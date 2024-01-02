@@ -15,7 +15,7 @@ from p2_ml.model_src.baseline_models import RS_baseline_usr_mov
     },
     description="Mejor modelo de training",
     required_resource_keys={"mlflow_training"},
-    group_name="training"
+    group_name="prediction"
 )
 def trained_baseline_model(
     context,

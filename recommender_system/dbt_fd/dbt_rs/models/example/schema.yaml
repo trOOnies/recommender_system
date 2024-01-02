@@ -7,11 +7,8 @@ sources:
     schema: public
     tables:
       - name: scores_raw
-        # identifier: _airbyte_raw_scores_raw
       - name: movies_raw
-        # identifier: _airbyte_raw_movies_raw
       - name: users_raw
-        # identifier: _airbyte_raw_users_raw
 models:
   - name: movies
     description: "Peliculas preprocesadas"

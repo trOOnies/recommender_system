@@ -24,29 +24,3 @@ SELECT
     cast(cast("war" as int) as boolean),
     cast(cast("western" as int) as boolean)
 FROM {{ source("recommender_system_raw", "movies_raw") }}
--- )
--- SELECT
---     id,
---     name,
---     release_date,
---     year,
---     ...,
---     action,
---     adventure,
---     animation,
---     childrens,
---     comedy,
---     crime,
---     documentary,
---     drama,
---     fantasy,
---     film_noir,
---     horror,
---     musical,
---     mystery,
---     romance,
---     sci_fi,
---     thriller,
---     war,
---     western
--- FROM t_0

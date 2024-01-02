@@ -13,7 +13,7 @@ from p2_ml.model_src.baseline_models import RS_baseline_usr_mov
         "y_train_val": AssetIn(),
         "tuning_baseline_model_best_param": AssetIn()
     },
-    description="Mejor modelo de training",
+    description="Info de la corrida de training",
     required_resource_keys={"mlflow_training"},
     group_name="training"
 )
@@ -47,7 +47,8 @@ def training_run_info(
         model_info = mlflow.pyfunc.log_model(
             "model",
             python_model=model,
-            signature=model.sig
+            signature=model.sig,
+            registered_model_name="rs_base_usr_mov"
         )
         run = mlflow.active_run()
 
